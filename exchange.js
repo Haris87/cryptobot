@@ -15,13 +15,14 @@ binance.options({
 
 
 var allCandlesticks = [];
+var movingAvg = 0;
 // Periods: 1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,1M
-binance.candlesticks("LTCETH", "1m", function(ticks) {
+binance.candlesticks("LTCETH", "1h", function(ticksArray) {
 	// console.log("candlesticks()", ticks);
 	// let last_tick = ticks[ticks.length - 1];
 	// let [time, open, high, low, close, volume, closeTime, assetVolume, trades, buyBaseVolume, buyAssetVolume, ignored] = last_tick;
 	//console.log("BNBBTC last close: "+close);
-  var all = ticks.map(function(tick){
+  var ticks = ticksArray.map(function(tick){
     return {
       ticker: "LTCETH",
       open: Number(tick[1]),
@@ -32,43 +33,103 @@ binance.candlesticks("LTCETH", "1m", function(ticks) {
     };
   });
 
-  // console.log(cs);
+  trade(ticks, 0.01);
 
-  // console.log(all[0], all[1]);
-  //
-  //
-  // console.log(cs.isBullishKicker(all[0], all[1])); // false
-  // console.log(cs.isBearishKicker(all[0], all[1])); // true
-  //
-  console.log({
-    size: all.length,
-    bullish: cs.bullishKicker(all),
-    bearish: cs.bearishKicker(all),
-    // bullish: cs.bullishHarami(all),
-    // bearish: cs.bearishHarami(all),
-    shootingStar: cs.shootingStar(all)
-  });
+  // console.log({
+  //   size: ticks.length,
+  //   bullishKicker: cs.bullishKicker(ticks).length,
+  //   bearishKicker: cs.bearishKicker(ticks).length,
+  //   bullishHarami: cs.bullishHarami(ticks).length,
+  //   bearishHarami: cs.bearishHarami(ticks).length,
+  //   bullishEngulfing: cs.bullishEngulfing(ticks).length,
+  //   bearishEngulfing: cs.bearishEngulfing(ticks).length,
+  //   hammer: cs.hammer(ticks).length,
+  //   invertedHammer: cs.invertedHammer(ticks).length,
+  //   hangingMan: cs.hangingMan(ticks).length,
+  //   shootingStar: cs.shootingStar(ticks)
+  // });
 });
 
+function getColor(price, movingAvg, margin){
+  if(price > movingAvg + margin){
+    // console.log('green', price);
+    color='G';
+  } else if(price < movingAvg - margin) {
+    // console.log('red', price);
+    color='R';
+  } else {
+    // console.log('yellow', price);
+    color='Y';
+  }
+  return color;
+}
 
-binance.websockets.candlesticks(['BNBBTC'], "1m", function(candlesticks) {
+function trade(ticks, multiplier){
+
+  var previousColor = 'Y';
+
+  // first trade is buy with the first price available
+  var previousTrade = 'BUY';
+  var earnings = ticks[0].close;
+
+  for (var i = 1; i < ticks.length; i++) {
+    var movingAvg = movingAverage(ticks.slice(0, i));
+    var price = ticks[i].close;
+    var margin = movingAvg * multiplier;
+
+    var color = getColor(price, movingAvg, margin);
+
+    // decide trade
+    if(previousColor == 'R' && color == 'Y' && previousTrade == 'SELL'){
+      //buy
+      console.log("BUY @\t", price, "\tWallet", earnings);
+      earnings += price;
+      previousTrade = 'BUY';
+    }
+
+    if(previousColor == 'G' && color == 'Y'  && previousTrade == 'BUY'){
+      //sell
+      console.log("SELL @\t", price, "\tWallet", earnings);
+      earnings -= price;
+      previousTrade = 'SELL';
+    }
+
+    previousColor = color;
+
+
+  }
+  console.log('EARNED', earnings);
+}
+
+function movingAverage(array){
+  var sum = 0;
+  // console.log(array);
+  for( var i = 0; i < array.length; i++ ){
+      sum += array[i].close;
+  }
+  return sum/array.length;
+}
+
+// binance.websockets.candlesticks(['BNBBTC'], "1m", function(candlesticks) {
 
 	// let { e:eventType, E:eventTime, s:symbol, k:ticks } = candlesticks;
 	// let tick = { o:open, h:high, l:low, c:close, v:volume, n:trades, i:interval, x:isFinal, q:quoteVolume, V:buyVolume, Q:quoteBuyVolume } = ticks;
 
 
-  let tick = { symbol: candlesticks.s, open: candlesticks.k.o, high: candlesticks.k.h, low: candlesticks.k.l, close: candlesticks.k.c, timestamp: candlesticks.E  };
+  // let tick = { symbol: candlesticks.s, open: candlesticks.k.o, high: candlesticks.k.h, low: candlesticks.k.l, close: candlesticks.k.c, timestamp: candlesticks.E  };
 
-  allCandlesticks.push(tick);
+  // allCandlesticks.push(tick);
 
-  if(allCandlesticks.length>2){
+  //getTrendColor(allCandlesticks);
+
+  // if(allCandlesticks.length>2){
     // console.log({
     //   size: allCandlesticks.length,
     //   bullish: cs.isBullishKicker(allCandlesticks[allCandlesticks.length-2], allCandlesticks[allCandlesticks.length-1]),
     //   bearish: cs.isBearishKicker(allCandlesticks[allCandlesticks.length-2], allCandlesticks[allCandlesticks.length-1]),
     //   shootingStar: cs.shootingStar(allCandlesticks)
     // });
-  }
+  // }
 
 
   // console.log(tick);
@@ -80,7 +141,7 @@ binance.websockets.candlesticks(['BNBBTC'], "1m", function(candlesticks) {
 	// console.log("close: "+close);
 	// console.log("volume: "+volume);
 	// console.log("isFinal: "+isFinal);
-});
+// });
 
 
 // Get bid/ask prices
