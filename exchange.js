@@ -82,15 +82,15 @@ function trade(ticks, multiplier){
     // decide trade
     if(previousColor == 'R' && color == 'Y' && previousTrade == 'SELL'){
       //buy
-      console.log("BUY @\t", price, "\tWallet", earnings);
       earnings += price;
+      console.log("BUY @\t", price, "\tWallet", earnings);
       previousTrade = 'BUY';
     }
 
     if(previousColor == 'G' && color == 'Y'  && previousTrade == 'BUY'){
       //sell
-      console.log("SELL @\t", price, "\tWallet", earnings);
       earnings -= price;
+      console.log("SELL @\t", price, "\tWallet", earnings);
       previousTrade = 'SELL';
     }
 
@@ -98,7 +98,7 @@ function trade(ticks, multiplier){
 
 
   }
-  console.log('EARNED', earnings);
+  console.log('EARNED\t', earnings);
 }
 
 function movingAverage(array){
