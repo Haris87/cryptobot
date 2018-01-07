@@ -84,7 +84,7 @@ console.debug = function(color, text){
 var previousTrade = 'SELL';
 var previousColor = 'Y';
 var earnings = 0;// ticks[0].close;
-// var lastbuy = ticks[0].close;
+var lastbuy = 0;
 
 function trade(ticks, multiplier){
   var margin, movingAvg, price, color;
@@ -99,20 +99,20 @@ function trade(ticks, multiplier){
     console.debug(color, ticks[i].date+"\tPRICE: "+price+"\tAVG:"+movingAvg);
 
     // decide trade
-    if(previousColor == 'R' && color == 'Y' && previousTrade == 'SELL'){
+    if(previousColor == 'R' && color == 'Y'){
       //buy
       previousTrade = 'BUY';
       lastbuy = price;
       console.log("\x1b[36m%s\t%s\x1b[0m", "BUY", price);
     }
 
-    if(previousColor == 'G' && color == 'Y'  && previousTrade == 'BUY'){
+    if(previousColor == 'G' && color == 'Y'){
       //sell
-      if(price - lastbuy > 0){
+      // if(price - lastbuy > 0){
         previousTrade = 'SELL';
         earnings += price - lastbuy;
         console.log("\x1b[36m%s\t%s\x1b[0m", "SELL", price);
-      }
+      // }
     }
 
     previousColor = color;
