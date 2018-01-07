@@ -17,7 +17,7 @@ binance.options({
 var allCandlesticks = [];
 var movingAvg = 0;
 // Periods: 1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,1M
-binance.candlesticks("LTCETH", "1h", function(ticksArray) {
+binance.candlesticks("NEOETH", "1d", function(ticksArray) {
 	// console.log("candlesticks()", ticks);
 	// let last_tick = ticks[ticks.length - 1];
 	// let [time, open, high, low, close, volume, closeTime, assetVolume, trades, buyBaseVolume, buyAssetVolume, ignored] = last_tick;
@@ -33,7 +33,7 @@ binance.candlesticks("LTCETH", "1h", function(ticksArray) {
     };
   });
 
-  trade(ticks, 0.01);
+  trade(ticks, 0.05);
 
   // console.log({
   //   size: ticks.length,
@@ -64,40 +64,62 @@ function getColor(price, movingAvg, margin){
   return color;
 }
 
+
+console.debug = function(color, text){
+  if(color == 'R'){
+    console.log("\x1b[31m%s\x1b[0m", text);
+  }
+
+  if(color == 'G'){
+    console.log("\x1b[32m%s\x1b[0m", text);
+  }
+
+  if(color == 'Y'){
+    console.log("\x1b[33m%s\x1b[0m", text);
+  }
+
+}
+
+// initialization
+var previousTrade = 'SELL';
+var previousColor = 'Y';
+var earnings = 0;// ticks[0].close;
+// var lastbuy = ticks[0].close;
+
 function trade(ticks, multiplier){
-
-  var previousColor = 'Y';
-
-  // first trade is buy with the first price available
-  var previousTrade = 'BUY';
-  var earnings = ticks[0].close;
-
+  var margin, movingAvg, price, color;
   for (var i = 1; i < ticks.length; i++) {
-    var movingAvg = movingAverage(ticks.slice(0, i));
-    var price = ticks[i].close;
-    var margin = movingAvg * multiplier;
+    price = ticks[i].close;
+    movingAvg = movingAverage(ticks.slice(0, i));
+    margin = movingAvg * multiplier;
 
-    var color = getColor(price, movingAvg, margin);
+
+    color = getColor(price, movingAvg, margin);
+    // console.log("Margin\t", color, movingAvg, margin, [movingAvg-margin, movingAvg+margin]);
+    console.debug(color, ticks[i].date+"\tPRICE: "+price+"\tAVG:"+movingAvg);
 
     // decide trade
     if(previousColor == 'R' && color == 'Y' && previousTrade == 'SELL'){
       //buy
-      earnings += price;
-      console.log("BUY @\t", price, "\tWallet", earnings);
       previousTrade = 'BUY';
+      lastbuy = price;
+      console.log("\x1b[36m%s\t%s\x1b[0m", "BUY", price);
     }
 
     if(previousColor == 'G' && color == 'Y'  && previousTrade == 'BUY'){
       //sell
-      earnings -= price;
-      console.log("SELL @\t", price, "\tWallet", earnings);
-      previousTrade = 'SELL';
+      if(price - lastbuy > 0){
+        previousTrade = 'SELL';
+        earnings += price - lastbuy;
+        console.log("\x1b[36m%s\t%s\x1b[0m", "SELL", price);
+      }
     }
 
     previousColor = color;
 
-
   }
+
+
   console.log('EARNED\t', earnings);
 }
 
@@ -111,36 +133,16 @@ function movingAverage(array){
 }
 
 // binance.websockets.candlesticks(['BNBBTC'], "1m", function(candlesticks) {
-
-	// let { e:eventType, E:eventTime, s:symbol, k:ticks } = candlesticks;
-	// let tick = { o:open, h:high, l:low, c:close, v:volume, n:trades, i:interval, x:isFinal, q:quoteVolume, V:buyVolume, Q:quoteBuyVolume } = ticks;
-
-
-  // let tick = { symbol: candlesticks.s, open: candlesticks.k.o, high: candlesticks.k.h, low: candlesticks.k.l, close: candlesticks.k.c, timestamp: candlesticks.E  };
-
-  // allCandlesticks.push(tick);
-
-  //getTrendColor(allCandlesticks);
-
-  // if(allCandlesticks.length>2){
-    // console.log({
-    //   size: allCandlesticks.length,
-    //   bullish: cs.isBullishKicker(allCandlesticks[allCandlesticks.length-2], allCandlesticks[allCandlesticks.length-1]),
-    //   bearish: cs.isBearishKicker(allCandlesticks[allCandlesticks.length-2], allCandlesticks[allCandlesticks.length-1]),
-    //   shootingStar: cs.shootingStar(allCandlesticks)
-    // });
-  // }
-
-
-  // console.log(tick);
-  // console.log(symbol+" candlestick update");
-  // console.log(tick);
-  // console.log("open: "+open);
-	// console.log("high: "+high);
-	// console.log("low: "+low);
-	// console.log("close: "+close);
-	// console.log("volume: "+volume);
-	// console.log("isFinal: "+isFinal);
+//
+// 	// let { e:eventType, E:eventTime, s:symbol, k:ticks } = candlesticks;
+// 	// let tick = { o:open, h:high, l:low, c:close, v:volume, n:trades, i:interval, x:isFinal, q:quoteVolume, V:buyVolume, Q:quoteBuyVolume } = ticks;
+//
+//   let tick = { symbol: candlesticks.s, open: candlesticks.k.o, high: candlesticks.k.h, low: candlesticks.k.l, close: candlesticks.k.c, timestamp: candlesticks.E  };
+//
+//   allCandlesticks.push(tick);
+//   console.log('price\t', tick.close);
+//   trade(allCandlesticks, 0.001);
+//
 // });
 
 
