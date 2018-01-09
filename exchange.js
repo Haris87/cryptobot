@@ -8,171 +8,178 @@ time.tzset('UTC');
 process.env.TZ = 'UTC';
 
 binance.options({
-	'APIKEY':process.env.API_KEY,
-	'APISECRET':process.env.API_SECRET,
-	'recvWindow': 60000
+  'APIKEY': process.env.API_KEY,
+  'APISECRET': process.env.API_SECRET,
+  'recvWindow': 60000
 });
 
+function buy(price, time, wallet, savings, stock) {
+  wallet[stock] = wallet[savings] / price;
+  wallet[stock] -= wallet[stock] * tradingFee; //remove trade fee from holdings
+  wallet[savings] = 0;
+  console.log("\x1b[35m%s\t%s\x1b[0m", "BUY", price, time, wallet);
+	return wallet;
+}
 
-var allCandlesticks = [];
-var movingAvg = 0;
+function sell(price, time, wallet, savings, stock) {
+  wallet[savings] = wallet[stock] * price;
+  wallet[savings] -= wallet[savings] * tradingFee; //remove trade fee from holdings
+  wallet[stock] = 0;
+  console.log("\x1b[36m%s\t%s\x1b[0m", "SELL", price, time, wallet);
+	return wallet;
+}
 
-// initialization
-var previousTrade = 'SELL';
-var previousColor = 'Y';
-var lastbuy = 0;
-var tradingFee = 0.001;
+function getTrendColor(price, average, margin) {
+  if (price > average + margin) {
+    // console.log('green', price);
+    color = 'G';
+  } else if (price < average - margin) {
+    // console.log('red', price);
+    color = 'R';
+  } else {
+    // console.log('yellow', price);
+    color = 'Y';
+  }
+  return color;
+}
 
-var wallet = {
-  'ETH': 1,
-  'NEO': 0
+function getTicksAverage(ticks) {
+  var array = ticks.map(function(t) {
+    return t.close
+  });
+  var sum = 0;
+  // console.log(array);
+  for (var i = 0; i < array.length; i++) {
+    sum += array[i].close;
+  }
+  return sum / array.length;
+}
+
+function getCandlesticks(tradePair, interval, callback) {
+  // Get data
+  // Periods: 1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,1M
+  binance.candlesticks(tradePair, interval, function(ticksArray) {
+
+    // let last_tick = ticks[ticks.length - 1];
+    // let [time, open, high, low, close, volume, closeTime, assetVolume, trades, buyBaseVolume, buyAssetVolume, ignored] = last_tick;
+
+    var ticks = ticksArray.map(function(tick) {
+      return {
+        ticker: params.tradePair,
+        open: Number(tick[1]),
+        high: Number(tick[2]),
+        low: Number(tick[3]),
+        close: Number(tick[4]),
+        date: new Date(tick[0])
+      };
+    });
+
+    callback(ticks);
+
+  });
+
 };
 
-var params = {
-  tradePair: "NEOETH",
-  interval: "15m",
-  multiplier: 0.001
-}
+function getCandlesticksRealTime(tradePair, interval, callback) {
+  binance.websockets.candlesticks([tradePair], interval, function(candlesticks) {
 
-function buy(price, time){
-  previousTrade = 'BUY';
-  lastbuy = price;
-  wallet['NEO'] = wallet['ETH'] / price;
-  wallet['NEO'] -= wallet['NEO'] * tradingFee; //remove trade fee from holdings
-  wallet['ETH'] = 0;
-  console.log("\x1b[35m%s\t%s\x1b[0m", "BUY", price, time, wallet);
-}
+    // let { e:eventType, E:eventTime, s:symbol, k:ticks } = candlesticks;
+    // let tick = { o:open, h:high, l:low, c:close, v:volume, n:trades, i:interval, x:isFinal, q:quoteVolume, V:buyVolume, Q:quoteBuyVolume } = ticks;
 
-function sell(price, time){
-  previousTrade = 'SELL';
-  wallet['ETH'] = wallet['NEO'] * price;
-  wallet['ETH'] -= wallet['ETH'] * tradingFee; //remove trade fee from holdings
-  wallet['NEO'] = 0;
-  console.log("\x1b[36m%s\t%s\x1b[0m", "SELL", price, time, wallet);
-}
+    var tick = {
+      ticker: candlesticks.s,
+      open: candlesticks.k.o,
+      high: candlesticks.k.h,
+      low: candlesticks.k.l,
+      close: candlesticks.k.c,
+      date: new Date(candlesticks.E)
+    };
 
-function trade(ticks, multiplier){
+    callback(tick);
+  });
+};
+
+module.exports = {
+	buy: buy,
+	sell: sell,
+	getTrendColor: getTrendColor,
+	getTicksAverage: getTicksAverage,
+	getCandlesticksRealTime: getCandlesticksRealTime,
+	getCandlesticks: getCandlesticks
+};
+
+
+function trade(ticks, multiplier) {
   var margin, movingAvg, price, color;
   for (var i = 1; i < ticks.length; i++) {
     price = ticks[i].close;
+    var time = ticks[i].date;
     movingAvg = movingAverage(ticks.slice(0, i));
     margin = movingAvg * multiplier;
 
 
-    color = getColor(price, movingAvg, margin);
+    color = getTrendColor(price, movingAvg, margin);
     // console.log("Margin\t", color, movingAvg, margin, [movingAvg-margin, movingAvg+margin]);
     //console.debug(color, ticks[i].date+"\tPRICE: "+price+"\tAVG:"+movingAvg);
 
     // decide trade
-    if(previousColor == 'R' && (color == 'Y' || color == 'G') && previousTrade == 'SELL'){
+    if (previousColor == 'R' && (color == 'Y' || color == 'G') && previousTrade == 'SELL') {
       //buy
-      buy(price, ticks[i].date);
+      buy(price, time);
+      lastBuy = price;
     }
 
-    if(previousColor == 'G' && (color == 'Y' || color == 'R') && previousTrade == 'BUY'){
+    if (previousColor == 'G' && (color == 'Y' || color == 'R') && previousTrade == 'BUY') {
       //sell
-      if(price - lastbuy > 0){
-        sell(price, ticks[i].date);
+      var isSellProfitable = price + price * params.tradingFee - lastBuy > 0;
+      if (isSellProfitable) {
+        sell(price, time);
+        checkProfitability = false;
+      } else {
+        // check next candlesticks for sell profitability
+        checkProfitability = true;
+      }
+    }
+
+    // check next candlesticks for sell profitability
+    if (checkProfitability) {
+      var isSellProfitable = price + price * params.tradingFee - lastBuy > 0;
+      if (isSellProfitable) {
+        console.log('FOUND PROFITABLE SELL!');
+        sell(price, time);
+        checkProfitability = false;
       }
     }
 
     previousColor = color;
 
+    // for testing only, delete in live
+    // if(i == ticks.length-1 && previousTrade == 'BUY'){
+    //   console.log('LAST SELL');
+    //   sell(price, time);
+    // }
+
   }
 
 
-  console.log('EARNED\t', wallet);
-}
+  //console.log('EARNED\t', wallet);
 
-function movingAverage(array){
-  var sum = 0;
-  // console.log(array);
-  for( var i = 0; i < array.length; i++ ){
-      sum += array[i].close;
-  }
-  return sum/array.length;
-}
+	console.debug = function(color, text) {
+	  if (color == 'R') {
+	    console.log("\x1b[31m%s\x1b[0m", text);
+	  }
 
+	  if (color == 'G') {
+	    console.log("\x1b[32m%s\x1b[0m", text);
+	  }
 
-function getColor(price, movingAvg, margin){
-  if(price > movingAvg + margin){
-    // console.log('green', price);
-    color='G';
-  } else if(price < movingAvg - margin) {
-    // console.log('red', price);
-    color='R';
-  } else {
-    // console.log('yellow', price);
-    color='Y';
-  }
-  return color;
-}
+	  if (color == 'Y') {
+	    console.log("\x1b[33m%s\x1b[0m", text);
+	  }
 
-
-console.debug = function(color, text){
-  if(color == 'R'){
-    console.log("\x1b[31m%s\x1b[0m", text);
-  }
-
-  if(color == 'G'){
-    console.log("\x1b[32m%s\x1b[0m", text);
-  }
-
-  if(color == 'Y'){
-    console.log("\x1b[33m%s\x1b[0m", text);
-  }
+	}
 
 }
-
-// Get data
-// Periods: 1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,1M
-binance.candlesticks(params.tradePair, params.interval, function(ticksArray) {
-
-	// let last_tick = ticks[ticks.length - 1];
-	// let [time, open, high, low, close, volume, closeTime, assetVolume, trades, buyBaseVolume, buyAssetVolume, ignored] = last_tick;
-
-  var ticks = ticksArray.map(function(tick){
-    return {
-      ticker: params.tradePair,
-      open: Number(tick[1]),
-      high: Number(tick[2]),
-      low: Number(tick[3]),
-      close: Number(tick[4]),
-      date: new Date(tick[0])
-    };
-  });
-
-  trade(ticks, params.multiplier);
-
-  // console.log({
-  //   size: ticks.length,
-  //   bullishKicker: cs.bullishKicker(ticks).length,
-  //   bearishKicker: cs.bearishKicker(ticks).length,
-  //   bullishHarami: cs.bullishHarami(ticks).length,
-  //   bearishHarami: cs.bearishHarami(ticks).length,
-  //   bullishEngulfing: cs.bullishEngulfing(ticks).length,
-  //   bearishEngulfing: cs.bearishEngulfing(ticks).length,
-  //   hammer: cs.hammer(ticks).length,
-  //   invertedHammer: cs.invertedHammer(ticks).length,
-  //   hangingMan: cs.hangingMan(ticks).length,
-  //   shootingStar: cs.shootingStar(ticks)
-  // });
-});
-
-
-// binance.websockets.candlesticks(['BNBBTC'], "1m", function(candlesticks) {
-//
-// 	// let { e:eventType, E:eventTime, s:symbol, k:ticks } = candlesticks;
-// 	// let tick = { o:open, h:high, l:low, c:close, v:volume, n:trades, i:interval, x:isFinal, q:quoteVolume, V:buyVolume, Q:quoteBuyVolume } = ticks;
-//
-//   let tick = { symbol: candlesticks.s, open: candlesticks.k.o, high: candlesticks.k.h, low: candlesticks.k.l, close: candlesticks.k.c, timestamp: candlesticks.E  };
-//
-//   allCandlesticks.push(tick);
-//   console.log('price\t', tick.close);
-//   trade(allCandlesticks, 0.001);
-//
-// });
-
 
 // Get bid/ask prices
 //binance.allBookTickers(function(json) {
