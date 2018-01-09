@@ -13,7 +13,7 @@ binance.options({
   'recvWindow': 60000
 });
 
-function buy(price, time, wallet, savings, stock) {
+function buy(price, time, wallet, savings, stock, tradingFee) {
   wallet[stock] = wallet[savings] / price;
   wallet[stock] -= wallet[stock] * tradingFee; //remove trade fee from holdings
   wallet[savings] = 0;
@@ -21,7 +21,7 @@ function buy(price, time, wallet, savings, stock) {
 	return wallet;
 }
 
-function sell(price, time, wallet, savings, stock) {
+function sell(price, time, wallet, savings, stock, tradingFee) {
   wallet[savings] = wallet[stock] * price;
   wallet[savings] -= wallet[savings] * tradingFee; //remove trade fee from holdings
   wallet[stock] = 0;
@@ -44,15 +44,12 @@ function getTrendColor(price, average, margin) {
 }
 
 function getTicksAverage(ticks) {
-  var array = ticks.map(function(t) {
-    return t.close
-  });
   var sum = 0;
   // console.log(array);
-  for (var i = 0; i < array.length; i++) {
-    sum += array[i].close;
+  for (var i = 0; i < ticks.length; i++) {
+    sum += ticks[i].close;
   }
-  return sum / array.length;
+  return sum / ticks.length;
 }
 
 function getCandlesticks(tradePair, interval, callback) {

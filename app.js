@@ -1,42 +1,57 @@
 var exchange = require('./exchange');
 
-var wallet = {
-  'ETH': 100,
-  'NEO': 0
-};
+var savings = 'ETH';
+var stock = 'NEO';
+
+var wallet = {};
+wallet[savings] = 1;
+wallet[stock] = 0;
 
 var params = {
-  tradePair: "NEOETH",
+  tradePair: stock+savings,
   interval: "1m",
   tradingFee: 0.01,
   multiplier: 0.001
-}
+};
+
+var candlesticks = [];
 
 exchange.getCandlesticks(params.tradePair, params.interval, function(ticks){
-  console.log(ticks);
+  console.log(ticks.length);
+  candlesticks = ticks;
+  trade(candlesticks, 0.001);
 })
 
-exchange.getCandlesticksRealTime(params.tradePair, params.interval, function(tick){
-  console.log(tick);
-})
+// exchange.getCandlesticksRealTime(params.tradePair, params.interval, function(tick){
+//
+//   if(candlesticks.length > 0){
+//
+//     console.log(exchange.getTicksAverage(candlesticks));
+//   }
+// });
 
 function trade(ticks, multiplier) {
   var margin, movingAvg, price, color;
+  var previousColor = 'Y';
+  var checkProfitability = false;
+  var previousTrade = 'SELL';
+
   for (var i = 1; i < ticks.length; i++) {
     price = ticks[i].close;
     var time = ticks[i].date;
-    movingAvg = movingAverage(ticks.slice(0, i));
+    movingAvg = exchange.getTicksAverage(ticks.slice(0, i));
     margin = movingAvg * multiplier;
 
 
-    color = getTrendColor(price, movingAvg, margin);
+    color = exchange.getTrendColor(price, movingAvg, margin);
     // console.log("Margin\t", color, movingAvg, margin, [movingAvg-margin, movingAvg+margin]);
     //console.debug(color, ticks[i].date+"\tPRICE: "+price+"\tAVG:"+movingAvg);
 
     // decide trade
     if (previousColor == 'R' && (color == 'Y' || color == 'G') && previousTrade == 'SELL') {
       //buy
-      buy(price, time);
+      wallet = exchange.buy(price, time, wallet, savings, stock, params.tradingFee);
+      previousTrade = 'BUY';
       lastBuy = price;
     }
 
@@ -44,7 +59,8 @@ function trade(ticks, multiplier) {
       //sell
       var isSellProfitable = price + price * params.tradingFee - lastBuy > 0;
       if (isSellProfitable) {
-        sell(price, time);
+        wallet = exchange.sell(price, time, wallet, savings, stock, params.tradingFee);
+        previousTrade = 'SELL';
         checkProfitability = false;
       } else {
         // check next candlesticks for sell profitability
@@ -57,7 +73,8 @@ function trade(ticks, multiplier) {
       var isSellProfitable = price + price * params.tradingFee - lastBuy > 0;
       if (isSellProfitable) {
         console.log('FOUND PROFITABLE SELL!');
-        sell(price, time);
+        wallet = exchange.sell(price, time, wallet, savings, stock, params.tradingFee);
+        previousTrade = 'SELL';
         checkProfitability = false;
       }
     }
