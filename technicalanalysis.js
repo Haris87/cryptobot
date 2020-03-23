@@ -278,42 +278,44 @@ function bearishKicker(dataArray) {
   return findPattern(dataArray, isBearishKicker);
 }
 
-const discoverPattern = ticks => {
+const discoverPatterns = ticks => {
+  const patterns = [];
   const current = ticks[ticks.length - 1];
   const previous = ticks[ticks.length - 2];
   const third = ticks[ticks.length - 3];
   const fourth = ticks[ticks.length - 4];
 
-  isShootingStar(previous, current) ? console.log("shooting star") : null;
+  isShootingStar(previous, current) ? patterns.push("shooting star") : null;
   isBearishEngulfing(previous, current)
-    ? console.log("bearish engulfing")
+    ? patterns.push("bearish engulfing")
     : null;
-  isBearishHarami(previous, current) ? console.log("bearish harami") : null;
-  isBearishKicker(previous, current) ? console.log("bearish kicker") : null;
+  isBearishHarami(previous, current) ? patterns.push("bearish harami") : null;
+  isBearishKicker(previous, current) ? patterns.push("bearish kicker") : null;
   isBullishEngulfing(previous, current)
-    ? console.log("bullish engulfing")
+    ? patterns.push("bullish engulfing")
     : null;
-  isBullishHarami(previous, current) ? console.log("bullish harami") : null;
-  isBullishKicker(previous, current) ? console.log("bullish kicker") : null;
-  isHammer(current) ? console.log("hammer") : null;
-  isHangingMan(previous, current) ? console.log("hanging man") : null;
-  isInvertedHammer(current) ? console.log("inverted hammer") : null;
+  isBullishHarami(previous, current) ? patterns.push("bullish harami") : null;
+  isBullishKicker(previous, current) ? patterns.push("bullish kicker") : null;
+  isHammer(current) ? patterns.push("hammer") : null;
+  isHangingMan(previous, current) ? patterns.push("hanging man") : null;
+  isInvertedHammer(current) ? patterns.push("inverted hammer") : null;
   isThreeBlackCrows(third, previous, current)
-    ? console.log("three black crows")
+    ? patterns.push("three black crows")
     : null;
   isThreeWhiteSoldiers(third, previous, current)
-    ? console.log("three white soldiers")
+    ? patterns.push("three white soldiers")
     : null;
   isBearishThreeLineStrike(fourth, third, previous, current)
-    ? console.log("bearish three line strike")
+    ? patterns.push("bearish three line strike")
     : null;
   isBullishThreeLineStrike(fourth, third, previous, current)
-    ? console.log("bullish three line strike")
+    ? patterns.push("bullish three line strike")
     : null;
 
-  isDoji(current) ? console.log("doji") : null;
-  isEveningStar() ? console.log("evening star") : null;
-  isAbandonedBaby() ? console.log("abandoned baby") : null;
+  isDoji(current) ? patterns.push("doji") : null;
+  isEveningStar() ? patterns.push("evening star") : null;
+  isAbandonedBaby() ? patterns.push("abandoned baby") : null;
+  return patterns;
 };
 
 module.exports.isHammer = isHammer;
@@ -336,4 +338,4 @@ module.exports.bullishHarami = bullishHarami;
 module.exports.bearishHarami = bearishHarami;
 module.exports.bullishKicker = bullishKicker;
 module.exports.bearishKicker = bearishKicker;
-module.exports.discoverPattern = discoverPattern;
+module.exports.discoverPatterns = discoverPatterns;

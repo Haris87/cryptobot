@@ -16,10 +16,12 @@ exchange
   .then(ticks => {
     console.log(
       ticks.splice(ticks.length - 4, ticks.length - 1).map(t => {
-        return { open: t.open, close: t.close };
+        return { open: t.open, close: t.close, time: t.date };
       })
     );
 
-    ta.discoverPattern(ticks);
+    ticks.splice(ticks.length - 1, 1);
+
+    console.log(ta.discoverPatterns(ticks));
   })
   .catch(err => console.log(err));

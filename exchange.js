@@ -1,8 +1,6 @@
 require("dotenv").config();
 const binance = require("node-binance-api");
 const time = require("time");
-// const cs = require('candlestick');
-const cs = require("./technicalanalysis");
 
 time.tzset("UTC");
 process.env.TZ = "UTC";
