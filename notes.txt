@@ -1,6 +1,3 @@
-Steps
-1) Recognize patterns
-2) Recognize trend (moving average, or something)
-3) Wait of confirmation of patterns
-4) Buy/sell
-5) When buying set stop limit
+percentages of patterns here
+https://books.google.gr/books?id=bgh4gAeKwCYC&newbks=1&newbks_redir=0&lpg=PP1&dq=Thomas+Bulkowski&pg=PT52&redir_esc=y#v=onepage&q&f=false
+

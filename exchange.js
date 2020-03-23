@@ -1,108 +1,65 @@
-require('dotenv').config();
-var binance = require('node-binance-api');
-var time = require('time');
-// var cs = require('candlestick');
-var cs = require('./technicalanalysis');
+require("dotenv").config();
+const binance = require("node-binance-api");
+const time = require("time");
+// const cs = require('candlestick');
+const cs = require("./technicalanalysis");
 
-time.tzset('UTC');
-process.env.TZ = 'UTC';
+time.tzset("UTC");
+process.env.TZ = "UTC";
 
 binance.options({
-  'APIKEY': process.env.API_KEY,
-  'APISECRET': process.env.API_SECRET,
-  'recvWindow': 60000
+  APIKEY: process.env.API_KEY,
+  APISECRET: process.env.API_SECRET,
+  recvWindow: 60000
 });
 
-function buy(price, time, wallet, savings, stock, tradingFee) {
-  wallet[stock] = wallet[savings] / price;
-  wallet[stock] -= wallet[stock] * tradingFee; //remove trade fee from holdings
-  wallet[savings] = 0;
-  console.log("\x1b[35m%s\t%s\x1b[0m", "BUY", price, time, wallet);
-	return wallet;
-}
+const getCandlesticks = (tradePair, interval) => {
+  return new Promise((resolve, reject) => {
+    // Get data
+    // Periods: 1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,1M
+    binance.candlesticks(tradePair, interval, ticksArray => {
+      // let last_tick = ticks[ticks.length - 1];
+      // let [time, open, high, low, close, volume, closeTime, assetVolume, trades, buyBaseVolume, buyAssetVolume, ignored] = last_tick;
 
-function sell(price, time, wallet, savings, stock, tradingFee) {
-  wallet[savings] = wallet[stock] * price;
-  wallet[savings] -= wallet[savings] * tradingFee; //remove trade fee from holdings
-  wallet[stock] = 0;
-  console.log("\x1b[36m%s\t%s\x1b[0m", "SELL", price, time, wallet);
-	return wallet;
-}
+      var ticks = ticksArray.map(tick => {
+        return {
+          ticker: tradePair,
+          open: Number(tick[1]),
+          high: Number(tick[2]),
+          low: Number(tick[3]),
+          close: Number(tick[4]),
+          date: new Date(tick[0])
+        };
+      });
 
-function getTrendColor(price, average, margin) {
-  if (price > average + margin) {
-    // console.log('green', price);
-    color = 'G';
-  } else if (price < average - margin) {
-    // console.log('red', price);
-    color = 'R';
-  } else {
-    // console.log('yellow', price);
-    color = 'Y';
-  }
-  return color;
-}
-
-function getTicksAverage(ticks) {
-  var sum = 0;
-  // console.log(array);
-  for (var i = 0; i < ticks.length; i++) {
-    sum += ticks[i].close;
-  }
-  return sum / ticks.length;
-}
-
-function getCandlesticks(tradePair, interval, callback) {
-  // Get data
-  // Periods: 1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,1M
-  binance.candlesticks(tradePair, interval, function(ticksArray) {
-
-    // let last_tick = ticks[ticks.length - 1];
-    // let [time, open, high, low, close, volume, closeTime, assetVolume, trades, buyBaseVolume, buyAssetVolume, ignored] = last_tick;
-
-    var ticks = ticksArray.map(function(tick) {
-      return {
-        ticker: tradePair,
-        open: Number(tick[1]),
-        high: Number(tick[2]),
-        low: Number(tick[3]),
-        close: Number(tick[4]),
-        date: new Date(tick[0])
-      };
+      resolve(ticks);
     });
-
-    callback(ticks);
-
   });
-
 };
 
-function getCandlesticksRealTime(tradePair, interval, callback) {
-  binance.websockets.candlesticks([tradePair], interval, function(candlesticks) {
+const getCandlesticksRealTime = (tradePair, interval) => {
+  return new Promise((resolve, reject) => {
+    binance.websockets.candlesticks([tradePair], interval, candlesticks => {
+      // let { e:eventType, E:eventTime, s:symbol, k:ticks } = candlesticks;
+      // let tick = { o:open, h:high, l:low, c:close, v:volume, n:trades, i:interval, x:isFinal, q:quoteVolume, V:buyVolume, Q:quoteBuyVolume } = ticks;
 
-    // let { e:eventType, E:eventTime, s:symbol, k:ticks } = candlesticks;
-    // let tick = { o:open, h:high, l:low, c:close, v:volume, n:trades, i:interval, x:isFinal, q:quoteVolume, V:buyVolume, Q:quoteBuyVolume } = ticks;
+      var tick = {
+        ticker: candlesticks.s,
+        open: candlesticks.k.o,
+        high: candlesticks.k.h,
+        low: candlesticks.k.l,
+        close: candlesticks.k.c,
+        date: new Date(candlesticks.E)
+      };
 
-    var tick = {
-      ticker: candlesticks.s,
-      open: candlesticks.k.o,
-      high: candlesticks.k.h,
-      low: candlesticks.k.l,
-      close: candlesticks.k.c,
-      date: new Date(candlesticks.E)
-    };
-
-    callback(tick);
+      resolve(tick);
+    });
   });
 };
 
 module.exports = {
-	buy: buy,
-	sell: sell,
-	getTrendColor: getTrendColor,
-	getTicksAverage: getTicksAverage,
-	getCandlesticksRealTime: getCandlesticksRealTime,
-	getCandlesticks: getCandlesticks
+  getCandlesticksRealTime: getCandlesticksRealTime,
+  getCandlesticks: getCandlesticks
 };
 
 // Get bid/ask prices
@@ -122,8 +79,6 @@ module.exports = {
 // 		console.log("ETH balance: ", balances.ETH.available);
 // 	}
 // });
-
-
 
 // Getting bid/ask prices for a symbol
 //binance.bookTickers(function(ticker) {
@@ -171,8 +126,6 @@ module.exports = {
 //binance.buy(symbol, quantity, price, type);
 //binance.buy("ETHBTC", 1, 0, "MARKET")
 //binance.sell(symbol, quantity, 0, "MARKET");
-
-
 
 // Maintain Market Depth Cache Locally via WebSocket
 // binance.websockets.depthCache(["BNBBTC"], function(symbol, depth) {
