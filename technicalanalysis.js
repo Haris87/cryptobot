@@ -280,10 +280,15 @@ function bearishKicker(dataArray) {
 
 const discoverPatterns = ticks => {
   const patterns = [];
-  const current = ticks[ticks.length - 1];
-  const previous = ticks[ticks.length - 2];
-  const third = ticks[ticks.length - 3];
-  const fourth = ticks[ticks.length - 4];
+  const current = ticks.pop();
+  const previous = ticks.pop();
+  const third = ticks.pop();
+  const fourth = ticks.pop();
+
+  //   console.log("current", current);
+  //   console.log("previous", previous);
+  //   console.log("third", third);
+  //   console.log("fourth", fourth);
 
   isShootingStar(previous, current) ? patterns.push("shooting star") : null;
   isBearishEngulfing(previous, current)

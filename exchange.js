@@ -1,6 +1,7 @@
 require("dotenv").config();
 const binance = require("node-binance-api");
 const time = require("time");
+const ta = require("./technicalanalysis");
 
 time.tzset("UTC");
 process.env.TZ = "UTC";
@@ -55,9 +56,41 @@ const getCandlesticksRealTime = (tradePair, interval) => {
   });
 };
 
+const getPairs = base => {
+  return new Promise((resolve, reject) => {
+    binance.exchangeInfo(ex => {
+      const symbols = ex.symbols
+        .filter(s => s.quoteAsset === base)
+        .map(s => s.symbol);
+      resolve(symbols);
+    });
+  });
+};
+
+const scanMarket = async (base, interval) => {
+  const pairs = await getPairs(base);
+  for (let i = 0; i < pairs.length; i++) {
+    const pair = pairs[i];
+    const ticks = await getCandlesticks(pair, interval);
+    //remove not yet closed candlestick
+    console.log(pair);
+    console.log("current", ta.discoverPatterns(ticks));
+    ticks.pop();
+    console.log("closed", ta.discoverPatterns(ticks));
+    console.log("######################################");
+    await sleep(1000);
+  }
+};
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 module.exports = {
-  getCandlesticksRealTime: getCandlesticksRealTime,
-  getCandlesticks: getCandlesticks
+  getCandlesticksRealTime,
+  getCandlesticks,
+  getPairs,
+  scanMarket
 };
 
 // Get bid/ask prices
