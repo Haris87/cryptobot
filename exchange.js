@@ -71,15 +71,19 @@ const scanMarket = async (base, interval) => {
   const pairs = await getPairs(base);
   for (let i = 0; i < pairs.length; i++) {
     const pair = pairs[i];
-    const ticks = await getCandlesticks(pair, interval);
-    //remove not yet closed candlestick
-    console.log(pair);
-    console.log("current", ta.discoverPatterns(ticks));
-    ticks.pop();
-    console.log("closed", ta.discoverPatterns(ticks));
-    console.log("######################################");
+    await printPair(pair, interval);
     await sleep(1000);
   }
+};
+
+const printPair = async (pair, interval) => {
+  const ticks = await getCandlesticks(pair, interval);
+  //remove not yet closed candlestick
+  console.log(pair);
+  console.log("current", ta.discoverPatterns(ticks));
+  ticks.pop();
+  console.log("closed", ta.discoverPatterns(ticks));
+  console.log("######################################");
 };
 
 function sleep(ms) {
@@ -90,6 +94,7 @@ module.exports = {
   getCandlesticksRealTime,
   getCandlesticks,
   getPairs,
+  printPair,
   scanMarket
 };
 

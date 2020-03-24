@@ -39,6 +39,13 @@ function isHammerLike(candlestick) {
   );
 }
 
+function isHammerLike(candlestick) {
+  return (
+    tailLen(candlestick) > bodyLen(candlestick) * 2 &&
+    wickLen(candlestick) < bodyLen(candlestick)
+  );
+}
+
 function isInvertedHammerLike(candlestick) {
   return (
     wickLen(candlestick) > bodyLen(candlestick) * 2 &&
@@ -94,6 +101,10 @@ function isHammer(candlestick) {
   return isBullish(candlestick) && isHammerLike(candlestick);
 }
 
+function isDragonfly(candlestick) {
+  return isHammer(candlestick) && isDoji(candlestick);
+}
+
 function isInvertedHammer(candlestick) {
   return isBearish(candlestick) && isInvertedHammerLike(candlestick);
 }
@@ -114,6 +125,10 @@ function isShootingStar(previous, current) {
     isGapUp(previous, current) &&
     isInvertedHammerLike(current)
   );
+}
+
+function isGravestoneDoji(current) {
+  return isInvertedHammerLike(current) && isDoji(current);
 }
 
 function isBullishEngulfing(previous, current) {
@@ -223,8 +238,7 @@ function isTwoBlackGapping(third, previous, current) {
   );
 }
 
-function isEveningStar() {
-  //TODO
+function isEveningStar(third, previous, current) {
   return false;
 }
 

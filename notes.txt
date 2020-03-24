@@ -1,3 +1,11 @@
 percentages of patterns here
 https://books.google.gr/books?id=bgh4gAeKwCYC&newbks=1&newbks_redir=0&lpg=PP1&dq=Thomas+Bulkowski&pg=PT52&redir_esc=y#v=onepage&q&f=false
 
+TODO:
+add all good perfoming candles from books
+add description to each candle
+add other indicators (RSI, MACD, MA, etc)
+get algos for determining when indicators are bull or bear and percentages of accuracy
+create frontend for ease of use
+sort coins by "bullishness"
+show wallet and open trades
